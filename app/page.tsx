@@ -523,13 +523,15 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    window.__gaussNavStage = "creating-3d-engine";
+    const isMobileViewport = window.matchMedia("(max-width: 720px)").matches;
     const app = new pc.Application(canvas, {
-      graphicsDeviceOptions: { antialias: true, alpha: false },
+      graphicsDeviceOptions: { antialias: !isMobileViewport, alpha: false },
       mouse: new pc.Mouse(canvas),
       touch: new pc.TouchDevice(canvas)
     });
-    const isMobileViewport = window.matchMedia("(max-width: 720px)").matches;
-    app.graphicsDevice.maxPixelRatio = Math.min(window.devicePixelRatio || 1, isMobileViewport ? 1.5 : 3);
+    window.__gaussNavStage = "loading-sog";
+    app.graphicsDevice.maxPixelRatio = Math.min(window.devicePixelRatio || 1, isMobileViewport ? 1 : 3);
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
     app.scene.ambientLight = new pc.Color(0.7, 0.7, 0.7);
     app.scene.exposure = 1;
@@ -666,6 +668,7 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
       });
     };
     asset.ready(() => {
+      window.__gaussNavStage = "rendering-scene";
       splat.addComponent("gsplat", { asset });
       splat.gsplat!.lodRangeMin = 0;
       splat.gsplat!.lodRangeMax = 0;
@@ -1134,6 +1137,7 @@ export default function Home() {
   const openPublishedScene = async (scene: PublishedScene) => {
     setPublishedSceneLoading(scene.slug);
     try {
+      window.__gaussNavStage = "downloading-scene";
       const projectPaths = scene.projectParts?.length ? scene.projectParts : scene.projectUrl ? [scene.projectUrl] : [];
       if (!projectPaths.length) throw new Error("场景清单缺少工程文件");
       const responses = await Promise.all(projectPaths.map(path => fetch(`${import.meta.env.BASE_URL}${path}`)));
@@ -1141,7 +1145,9 @@ export default function Home() {
       if (failed) throw new Error(`场景下载失败（${failed.status}）`);
       const blob = new Blob(await Promise.all(responses.map(response => response.blob())));
       const projectFile = new File([blob], `${scene.slug}.gaussnav`, { type: "application/x-gaussnav-project" });
+      window.__gaussNavStage = "parsing-project";
       await restoreProject(await parseProjectBundle(projectFile));
+      window.__gaussNavStage = "opening-viewer";
       setConsumerMode(true);
       setWorkflow("navigate");
       window.history.replaceState(null, "", `${window.location.pathname}?scene=${encodeURIComponent(scene.slug)}`);

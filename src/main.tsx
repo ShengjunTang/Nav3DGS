@@ -1,10 +1,9 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import Home from "../app/page";
 import "../app/globals.css";
 
+window.__gaussNavStage = "mounting-react";
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <Home />
-  </StrictMode>,
+  <Home />,
 );
+window.__gaussNavStage = "react-mounted";

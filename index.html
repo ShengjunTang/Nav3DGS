@@ -21,11 +21,13 @@
       window.showGaussNavBootError = function (error) {
         var target = document.getElementById("boot-error");
         if (!target) return;
-        var message = error && (error.message || error.reason && error.reason.message || error.reason) || "未知错误";
+        var reason = error && error.reason;
+        var message = error && (error.message || reason && (reason.message || String(reason)) || error.type) || "未提供错误信息";
+        var stage = window.__gaussNavStage || "loading-module";
         target.style.display = "grid";
         target.innerHTML = "<div><b style='display:block;color:#ff927a;margin-bottom:10px'>GaussNav 启动失败</b><span style='font-size:12px;line-height:1.6'>"
           + String(message).replace(/[&<>]/g, function (character) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[character]; })
-          + "</span><small style='display:block;margin-top:12px;color:#657984'>请截图此信息并发送给开发者</small></div>";
+          + "</span><small style='display:block;margin-top:12px;color:#657984'>阶段：" + stage + "<br>请截图此信息并发送给开发者</small></div>";
       };
       window.addEventListener("error", function (event) { window.showGaussNavBootError(event.error || event.message); });
       window.addEventListener("unhandledrejection", function (event) { window.showGaussNavBootError(event); });
