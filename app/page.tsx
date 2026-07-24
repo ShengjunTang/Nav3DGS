@@ -307,12 +307,13 @@ async function createProjectBundle(project: Record<string, unknown>, sceneFile: 
 }
 
 async function parseProjectBundle(file: File) {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  if (new TextDecoder().decode(bytes.slice(0, 9)) !== "GAUSSNAV1") throw new Error("不是有效的 GaussNav 工程文件");
-  const manifestLength = new DataView(buffer, 9, 4).getUint32(0, true);
-  const manifest = JSON.parse(new TextDecoder().decode(bytes.slice(13, 13 + manifestLength)));
-  const sceneFile = new File([bytes.slice(13 + manifestLength)], manifest.sceneName, { type: manifest.sceneType });
+  const header = await file.slice(0, 13).arrayBuffer();
+  const headerBytes = new Uint8Array(header);
+  if (new TextDecoder().decode(headerBytes.slice(0, 9)) !== "GAUSSNAV1") throw new Error("不是有效的 GaussNav 工程文件");
+  const manifestLength = new DataView(header, 9, 4).getUint32(0, true);
+  const manifestEnd = 13 + manifestLength;
+  const manifest = JSON.parse(await file.slice(13, manifestEnd).text());
+  const sceneFile = new File([file.slice(manifestEnd)], manifest.sceneName, { type: manifest.sceneType });
   return { ...manifest, sceneFile };
 }
 
@@ -527,7 +528,8 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
       mouse: new pc.Mouse(canvas),
       touch: new pc.TouchDevice(canvas)
     });
-    app.graphicsDevice.maxPixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+    const isMobileViewport = window.matchMedia("(max-width: 720px)").matches;
+    app.graphicsDevice.maxPixelRatio = Math.min(window.devicePixelRatio || 1, isMobileViewport ? 1.5 : 3);
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
     app.scene.ambientLight = new pc.Color(0.7, 0.7, 0.7);
     app.scene.exposure = 1;
@@ -672,6 +674,9 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
     });
     asset.on("progress", (loaded: number, total: number) => {
       if (total > 0) setSceneStatus(`正在解析最高精度场景 ${Math.round(loaded / total * 100)}%`);
+    });
+    asset.on("error", (error: unknown) => {
+      setSceneStatus(`场景加载失败：${error instanceof Error ? error.message : "设备内存或 WebGL 资源不足"}`);
     });
     asset.on("error", () => setSceneStatus("场景载入失败，请刷新重试"));
     app.assets.load(asset);
