@@ -619,8 +619,8 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
       if (previewPath.length < 2) return;
       const from = toScene(previewPath[0]);
       const toward = toScene(previewPath[1]);
-      from.y -= 0.4;
-      toward.y -= 0.4;
+      from.y -= 0.1;
+      toward.y -= 0.1;
       firstPerson.position.copy(from);
       firstPerson.yaw = Math.atan2(toward.x - from.x, toward.z - from.z);
       firstPerson.pitch = 0;
@@ -709,8 +709,8 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
         const lookPoint = samplePolyline(active, Math.min(1, progressRef.current + 1.6 / Math.max(1, activeLength)));
         const cameraPosition = toScene(cameraPoint);
         const lookAt = toScene(lookPoint);
-        cameraPosition.y -= 0.4;
-        lookAt.y -= 0.4;
+        cameraPosition.y -= 0.1;
+        lookAt.y -= 0.1;
         lookAt.y = cameraPosition.y + Math.max(-0.12, Math.min(0.12, lookAt.y - cameraPosition.y));
         const desiredDirection = lookAt.clone().sub(cameraPosition).normalize();
         const smoothing = 1 - Math.exp(-Math.max(0, deltaTime) * 7);
@@ -890,7 +890,7 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
 
   return <div className="viewer">
     <canvas tabIndex={0} className={poiEditing ? "poi-editing" : ""} ref={canvasRef} aria-label="叠加真实道路网络的深圳大学 3DGS 场景" />
-    <div className="viewer-overlay top"><span className="live-dot" /> {sceneStatus} <b>{playing ? "人眼高度修正 −0.4m · 稳定俯仰导航中" : viewMode === "first" ? "拖动转向 · 左侧按钮记录当前 POI · WASD / Q/E 移动" : poiEditing ? "左键拖动旋转 · 右键平移 · 左侧按钮记录当前 POI" : "左键旋转 · 右键平移 · 滚轮缩放 · WASD · Q/E 升降"}</b></div>
+    <div className="viewer-overlay top"><span className="live-dot" /> {sceneStatus} <b>{playing ? "人眼高度修正 −0.1m · 稳定俯仰导航中" : viewMode === "first" ? "拖动转向 · 左侧按钮记录当前 POI · WASD / Q/E 移动" : poiEditing ? "左键拖动旋转 · 右键平移 · 左侧按钮记录当前 POI" : "左键旋转 · 右键平移 · 滚轮缩放 · WASD · Q/E 升降"}</b></div>
     <div className="viewer-tools">
       <button className={viewMode === "orbit" ? "active" : ""} onClick={() => { viewModeRef.current = "orbit"; setViewMode("orbit"); resetRef.current(); }}>自由观察</button>
       <button className={viewMode === "first" ? "active" : ""} onClick={() => { viewModeRef.current = "first"; setViewMode("first"); enterFirstPersonRef.current(); }}>第一人称</button>
