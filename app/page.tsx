@@ -10,7 +10,8 @@ type GraphEdge = [number, number];
 type PublishedScene = {
   slug: string;
   title: string;
-  projectUrl: string;
+  projectUrl?: string;
+  projectParts?: string[];
   size: number;
   routeNodes: number;
   poiCount: number;
@@ -1128,9 +1129,12 @@ export default function Home() {
   const openPublishedScene = async (scene: PublishedScene) => {
     setPublishedSceneLoading(scene.slug);
     try {
-      const response = await fetch(`${import.meta.env.BASE_URL}${scene.projectUrl}`);
-      if (!response.ok) throw new Error(`场景下载失败（${response.status}）`);
-      const blob = await response.blob();
+      const projectPaths = scene.projectParts?.length ? scene.projectParts : scene.projectUrl ? [scene.projectUrl] : [];
+      if (!projectPaths.length) throw new Error("场景清单缺少工程文件");
+      const responses = await Promise.all(projectPaths.map(path => fetch(`${import.meta.env.BASE_URL}${path}`)));
+      const failed = responses.find(response => !response.ok);
+      if (failed) throw new Error(`场景下载失败（${failed.status}）`);
+      const blob = new Blob(await Promise.all(responses.map(response => response.blob())));
       const projectFile = new File([blob], `${scene.slug}.gaussnav`, { type: "application/x-gaussnav-project" });
       await restoreProject(await parseProjectBundle(projectFile));
       setConsumerMode(true);

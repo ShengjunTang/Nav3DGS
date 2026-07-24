@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 
 const [, , sourceArgument, slugArgument, ...titleParts] = process.argv;
@@ -31,15 +31,29 @@ if (bytes.byteLength > 95 * 1024 * 1024) {
 
 const title = titleParts.join(" ").trim() || manifest.projectName || basename(source, ".gaussnav");
 const outputDirectory = resolve("public-pages", "scenes", slug);
+await rm(outputDirectory, { recursive: true, force: true });
 await mkdir(outputDirectory, { recursive: true });
-await copyFile(source, resolve(outputDirectory, "project.gaussnav"));
+const partSize = 8 * 1024 * 1024;
+let projectUrl;
+let projectParts;
+if (bytes.byteLength <= partSize) {
+  await copyFile(source, resolve(outputDirectory, "project.gaussnav"));
+  projectUrl = `scenes/${slug}/project.gaussnav`;
+} else {
+  projectParts = [];
+  for (let offset = 0, part = 1; offset < bytes.byteLength; offset += partSize, part++) {
+    const partName = `project.part-${String(part).padStart(2, "0")}`;
+    await writeFile(resolve(outputDirectory, partName), bytes.subarray(offset, offset + partSize));
+    projectParts.push(`scenes/${slug}/${partName}`);
+  }
+}
 
 const registryPath = resolve("public-pages", "scenes", "index.json");
 const registry = JSON.parse(await readFile(registryPath, "utf8"));
 const entry = {
   slug,
   title,
-  projectUrl: `scenes/${slug}/project.gaussnav`,
+  ...(projectUrl ? { projectUrl } : { projectParts }),
   size: bytes.byteLength,
   routeNodes: Array.isArray(manifest.route) ? manifest.route.length : 0,
   poiCount: Array.isArray(manifest.pois) ? manifest.pois.length : 0,
