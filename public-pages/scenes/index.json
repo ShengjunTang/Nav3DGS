@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "slug": "szu-risc",
+    "title": "SZU RISC",
+    "projectParts": [
+      "scenes/szu-risc/project.part-01",
+      "scenes/szu-risc/project.part-02",
+      "scenes/szu-risc/project.part-03",
+      "scenes/szu-risc/project.part-04",
+      "scenes/szu-risc/project.part-05"
+    ],
+    "size": 37096343,
+    "routeNodes": 160,
+    "poiCount": 2,
+    "publishedAt": "2026-07-24T02:18:40.020Z"
+  }
+]
