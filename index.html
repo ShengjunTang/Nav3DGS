@@ -30,7 +30,9 @@
           + "</span><small style='display:block;margin-top:12px;color:#657984'>阶段：" + stage + "<br>请截图此信息并发送给开发者</small></div>";
       };
       window.addEventListener("error", function (event) { window.showGaussNavBootError(event.error || event.message); });
-      window.addEventListener("unhandledrejection", function (event) { window.showGaussNavBootError(event); });
+      window.addEventListener("unhandledrejection", function (event) {
+        if (event.reason != null) window.showGaussNavBootError(event);
+      });
     </script>
     <script type="module">
       import("/src/main.tsx").catch(window.showGaussNavBootError);

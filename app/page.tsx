@@ -669,6 +669,8 @@ function Viewer({ playing, progress, path, roamRoute, pois, poiEditing, onAddPoi
     };
     asset.ready(() => {
       window.__gaussNavStage = "rendering-scene";
+      const bootError = document.getElementById("boot-error");
+      if (bootError) bootError.style.display = "none";
       splat.addComponent("gsplat", { asset });
       splat.gsplat!.lodRangeMin = 0;
       splat.gsplat!.lodRangeMax = 0;
