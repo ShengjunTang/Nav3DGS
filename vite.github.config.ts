@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   base: "/Nav3DGS/",
-  publicDir: false,
+  publicDir: "public-pages",
   plugins: [react()],
   build: {
     outDir: "dist-pages",

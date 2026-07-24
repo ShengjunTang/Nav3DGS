@@ -7,6 +7,15 @@ import { convertPlyToSog, isSogFile } from "./sog-converter";
 type Point = { x: number; y: number; world?: [number, number, number]; view?: { yaw: number; pitch: number } };
 type Poi = Point & { name: string; category: string; detail: string };
 type GraphEdge = [number, number];
+type PublishedScene = {
+  slug: string;
+  title: string;
+  projectUrl: string;
+  size: number;
+  routeNodes: number;
+  poiCount: number;
+  publishedAt: string;
+};
 
 const defaultPois: Poi[] = [];
 
@@ -911,6 +920,8 @@ export default function Home() {
   const [sceneConverting, setSceneConverting] = useState(false);
   const [sceneSourceSize, setSceneSourceSize] = useState(0);
   const [straightenTolerance, setStraightenTolerance] = useState(0.25);
+  const [publishedScenes, setPublishedScenes] = useState<PublishedScene[]>([]);
+  const [publishedSceneLoading, setPublishedSceneLoading] = useState("");
   const path = useMemo(() => start && end ? findRoute(start, end, pois, route, graphEdges) : [], [start, end, pois, route, graphEdges]);
   const distance = useMemo(() => Math.round(path.slice(1).reduce((total, point, index) => total + pointDistance(path[index], point), 0)), [path]);
   const roamDistance = useMemo(() => route.slice(1).reduce((total, point, index) => total + pointDistance(route[index], point), 0), [route]);
@@ -1114,6 +1125,40 @@ export default function Home() {
     setNotice("工程已打开");
   };
 
+  const openPublishedScene = async (scene: PublishedScene) => {
+    setPublishedSceneLoading(scene.slug);
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}${scene.projectUrl}`);
+      if (!response.ok) throw new Error(`场景下载失败（${response.status}）`);
+      const blob = await response.blob();
+      const projectFile = new File([blob], `${scene.slug}.gaussnav`, { type: "application/x-gaussnav-project" });
+      await restoreProject(await parseProjectBundle(projectFile));
+      setConsumerMode(true);
+      setWorkflow("navigate");
+      window.history.replaceState(null, "", `${window.location.pathname}?scene=${encodeURIComponent(scene.slug)}`);
+      setNotice(`已打开公开场景：${scene.title}`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "公开场景打开失败");
+    } finally {
+      setPublishedSceneLoading("");
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${import.meta.env.BASE_URL}scenes/index.json`)
+      .then(response => response.ok ? response.json() : [])
+      .then((scenes: PublishedScene[]) => {
+        if (!active) return;
+        setPublishedScenes(scenes);
+        const slug = new URLSearchParams(window.location.search).get("scene");
+        const selected = slug && scenes.find(scene => scene.slug === slug);
+        if (selected) void openPublishedScene(selected);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
   const openRecentProject = async () => {
     const stored = await readLocalProject("last-project") as Parameters<typeof restoreProject>[0] | undefined;
     if (!stored) { setNotice("本机尚未保存 GaussNav 工程"); return; }
@@ -1147,6 +1192,16 @@ export default function Home() {
       }}>创建工程并进入编辑 <span>→</span></button>
       <label className="open-project"><input type="file" accept=".gaussnav" onChange={openProjectFile} />打开其他 GaussNav 工程</label>
       <button className="open-project" onClick={openRecentProject}>打开最近保存的本地工程</button>
+      {publishedScenes.length > 0 && <div className="published-scenes">
+        <div className="published-heading"><b>公开场景</b><span>{publishedScenes.length} 个可直接浏览</span></div>
+        <div className="published-grid">{publishedScenes.map(scene =>
+          <button key={scene.slug} disabled={Boolean(publishedSceneLoading)} onClick={() => void openPublishedScene(scene)}>
+            <span className="published-mark">3D</span>
+            <div><b>{scene.title}</b><small>{scene.routeNodes.toLocaleString()} 节点 · {scene.poiCount} POI · {formatBytes(scene.size)}</small></div>
+            <em>{publishedSceneLoading === scene.slug ? "载入中…" : "打开 →"}</em>
+          </button>
+        )}</div>
+      </div>}
       <small className="local-note">转换完全在本机完成，原始 PLY 不会上传；大型场景转换期间请保持页面打开。</small>
     </section>
   </main>;
