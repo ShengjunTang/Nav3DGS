@@ -12,6 +12,8 @@ type PublishedScene = {
   title: string;
   projectUrl?: string;
   projectParts?: string[];
+  manifestUrl?: string;
+  sogUrl?: string;
   size: number;
   routeNodes: number;
   poiCount: number;
@@ -1116,11 +1118,13 @@ export default function Home() {
   };
 
   const restoreProject = async (stored: {
-      projectName: string; sceneFile: File; rawRoute?: Point[]; route: Point[]; graphEdges?: GraphEdge[]; cleaned?: boolean; topologyBuilt?: boolean; pois: Poi[]; start: string; end: string;
-    }) => {
-    const normalizedScene = await prepareSceneFile(stored.sceneFile);
+      projectName: string; sceneFile?: File; rawRoute?: Point[]; route: Point[]; graphEdges?: GraphEdge[]; cleaned?: boolean; topologyBuilt?: boolean; pois: Poi[]; start: string; end: string;
+    }, publishedSogUrl?: string) => {
+    const normalizedScene = stored.sceneFile ? await prepareSceneFile(stored.sceneFile) : null;
+    if (!normalizedScene && !publishedSogUrl) throw new Error("工程缺少场景文件");
     setProjectName(stored.projectName);
     setSceneFile(normalizedScene);
+    if (publishedSogUrl) setSceneUrl(publishedSogUrl);
     setRawRoute(stored.rawRoute ?? stored.route);
     setRoute(stored.route);
     setGraphEdges(stored.graphEdges ?? []);
@@ -1140,6 +1144,21 @@ export default function Home() {
     setPublishedSceneLoading(scene.slug);
     try {
       window.__gaussNavStage = "downloading-scene";
+      if (scene.manifestUrl && scene.sogUrl) {
+        const response = await fetch(`${import.meta.env.BASE_URL}${scene.manifestUrl}`);
+        if (!response.ok) throw new Error(`场景清单下载失败（${response.status}）`);
+        window.__gaussNavStage = "parsing-project";
+        await restoreProject(
+          await response.json(),
+          `${import.meta.env.BASE_URL}${scene.sogUrl}`,
+        );
+        window.__gaussNavStage = "opening-viewer";
+        setConsumerMode(true);
+        setWorkflow("navigate");
+        window.history.replaceState(null, "", `${window.location.pathname}?scene=${encodeURIComponent(scene.slug)}`);
+        setNotice(`已打开公开场景：${scene.title}`);
+        return;
+      }
       const projectPaths = scene.projectParts?.length ? scene.projectParts : scene.projectUrl ? [scene.projectUrl] : [];
       if (!projectPaths.length) throw new Error("场景清单缺少工程文件");
       const responses = await Promise.all(projectPaths.map(path => fetch(`${import.meta.env.BASE_URL}${path}`)));
