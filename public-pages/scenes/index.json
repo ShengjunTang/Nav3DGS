@@ -4,7 +4,7 @@
     "title": "SZU RISC",
     "manifestUrl": "scenes/szu-risc/project.json",
     "sogUrl": "scenes/szu-risc/sog/meta.json",
-    "mobileSogUrl": "scenes/szu-risc/sog-mobile/meta.json",
+    "mobileSogUrl": "scenes/szu-risc/sog-mobile-lite/meta.json",
     "size": 37096343,
     "routeNodes": 160,
     "poiCount": 2,
