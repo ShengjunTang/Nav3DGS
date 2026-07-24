@@ -14,6 +14,7 @@ type PublishedScene = {
   projectParts?: string[];
   manifestUrl?: string;
   sogUrl?: string;
+  mobileSogUrl?: string;
   size: number;
   routeNodes: number;
   poiCount: number;
@@ -1147,10 +1148,13 @@ export default function Home() {
       if (scene.manifestUrl && scene.sogUrl) {
         const response = await fetch(`${import.meta.env.BASE_URL}${scene.manifestUrl}`);
         if (!response.ok) throw new Error(`场景清单下载失败（${response.status}）`);
+        const sogUrl = window.matchMedia("(max-width: 720px)").matches && scene.mobileSogUrl
+          ? scene.mobileSogUrl
+          : scene.sogUrl;
         window.__gaussNavStage = "parsing-project";
         await restoreProject(
           await response.json(),
-          `${import.meta.env.BASE_URL}${scene.sogUrl}`,
+          `${import.meta.env.BASE_URL}${sogUrl}`,
         );
         window.__gaussNavStage = "opening-viewer";
         setConsumerMode(true);
