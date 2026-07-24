@@ -11,7 +11,25 @@
     <title>GaussNav - 3D 实景导航生成器</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div id="root">
+      <div id="boot-status" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#050b10;color:#9eb1b9;font:14px -apple-system,BlinkMacSystemFont,sans-serif;text-align:center">
+        正在启动 GaussNav…
+      </div>
+    </div>
+    <script>
+      window.showGaussNavBootError = function (error) {
+        var target = document.getElementById("boot-status");
+        if (!target) return;
+        var message = error && (error.message || error.reason && error.reason.message || error.reason) || "未知错误";
+        target.innerHTML = "<div><b style='display:block;color:#ff927a;margin-bottom:10px'>GaussNav 启动失败</b><span style='font-size:12px;line-height:1.6'>"
+          + String(message).replace(/[&<>]/g, function (character) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[character]; })
+          + "</span><small style='display:block;margin-top:12px;color:#657984'>请截图此信息并发送给开发者</small></div>";
+      };
+      window.addEventListener("error", function (event) { window.showGaussNavBootError(event.error || event.message); });
+      window.addEventListener("unhandledrejection", function (event) { window.showGaussNavBootError(event); });
+    </script>
+    <script type="module">
+      import("/src/main.tsx").catch(window.showGaussNavBootError);
+    </script>
   </body>
 </html>

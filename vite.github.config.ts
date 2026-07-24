@@ -8,5 +8,7 @@ export default defineConfig({
   build: {
     outDir: "dist-pages",
     emptyOutDir: true,
+    target: "safari15",
+    cssTarget: "safari15",
   },
 });
